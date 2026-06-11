@@ -1,24 +1,47 @@
-# Dokumentasi Praktikum Docker - Versi Markdown
+# LAPORAN DOCKER INTRO
 
-**Nama:** Daffi Achmad Wijayanto
+**Workshop Administrasi Jaringan**
 
-Dokumen ini adalah versi penyajian ulang dari laporan praktikum Docker ke format Markdown. Materi disusun per modul, dengan bukti gambar praktikum disimpan di folder `assets/` dan direferensikan dari setiap file `.md`.
+## Identitas
 
-## Struktur File
+- Ahmad Haq Al-Barra (3124600043)
+- Daffi Achmad Wijayanto (3124600047)
+- Abdullah Falich (3124600059)
+- Kelas: D4 IT B
+- Program Studi: D4 Teknik Informatika
+- Departemen: Teknik Informatika dan Komputer
+- Institusi: Politeknik Elektronika Negeri Surabaya
 
-- `01-modul-1-docker-dan-instalasi.md` - Modul 1: Docker dan Instalasi
-- `02-modul-2-docker-service-volume-mount-point.md` - Modul 2: Docker Service, Volume dan Mount Point
-- `03-modul-3-web-service-apache-nginx.md` - Modul 3: Web Service di Docker - Apache dan Nginx
-- `04-modul-4-database-service-postgresql.md` - Modul 4: Database Service di Docker - PostgreSQL
-- `05-modul-5-logging-service-docker-postgresql.md` - Modul 5: Logging Service Docker dengan PostgreSQL
-- `06-modul-6-grafana-service-monitoring-resource.md` - Modul 6: Grafana Service Docker untuk Monitoring Resource
+## Struktur Folder
 
-## Struktur Gambar
+```text
+laporan-docker-intro-md/
+├── README.md
+├── 01-modul-1-instalasi-docker.md
+├── 02-modul-2-service-mount-docker.md
+├── 03-modul-3-web-service-docker.md
+├── 04-modul-4-database-postgresql.md
+├── 05-modul-5-logging-service.md
+├── 06-modul-6-grafana-service-monitoring.md
+├── MANIFEST.txt
+└── assets/
+    ├── modul-01/
+    ├── modul-02/
+    ├── modul-03/
+    ├── modul-04/
+    ├── modul-05/
+    └── modul-06/
+```
 
-Setiap modul disertai folder gambar terpisah, misalnya `assets/modul-01/`, `assets/modul-02/`, dan seterusnya. Gambar digunakan sebagai bukti pendukung bahwa tahapan praktikum telah dilaksanakan.
+## Daftar Modul
 
-## Catatan Penyusunan
+1. [Modul 1: Instalasi Docker](01-modul-1-instalasi-docker.md)
+2. [Modul 2: Service Mount Docker](02-modul-2-service-mount-docker.md)
+3. [Modul 3: Web Service Docker](03-modul-3-web-service-docker.md)
+4. [Modul 4: Database PostgreSQL](04-modul-4-database-postgresql.md)
+5. [Modul 5: Logging Service](05-modul-5-logging-service.md)
+6. [Modul 6: Grafana Service dan Monitoring Resource](06-modul-6-grafana-service-monitoring.md)
 
-- Urutan modul dipertahankan sesuai dokumen sumber.
-- Bahasa ditulis ulang dengan susunan Markdown yang tetap konsisten.
-- Gambar tidak disisipkan langsung ke dalam file Markdown, tetapi direferensikan menggunakan relative path.
+## Catatan Konversi
+
+Dokumen ini dikonversi dari file `.docx` menjadi beberapa file Markdown. Screenshot praktikum disimpan di folder `assets/` dan dipanggil menggunakan relative path agar mudah dibuka di VS Code, GitHub, Obsidian, atau editor Markdown lain.
