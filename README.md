@@ -42,6 +42,4 @@ laporan-docker-intro-md/
 5. [Modul 5: Logging Service](05-modul-5-logging-service.md)
 6. [Modul 6: Grafana Service dan Monitoring Resource](06-modul-6-grafana-service-monitoring.md)
 
-## Catatan Konversi
 
-Dokumen ini dikonversi dari file `.docx` menjadi beberapa file Markdown. Screenshot praktikum disimpan di folder `assets/` dan dipanggil menggunakan relative path agar mudah dibuka di VS Code, GitHub, Obsidian, atau editor Markdown lain.
