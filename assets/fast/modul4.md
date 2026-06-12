@@ -1,195 +1,290 @@
-# =========================================================
-# CHECKLIST MODUL 4 — POSTGRESQL DI DOCKER
-# =========================================================
+# MODUL 4 — Jawaban Checklist Database Service Docker — PostgreSQL
 
-# Masuk folder project
+> Tujuan file ini: menjalankan dan membuktikan setiap item checklist Modul 4.  
+> Project diasumsikan berada di `~/docker-lab/postgresql`.
+
+---
+
+## 0. Masuk folder project
+
+```bash
 cd ~/docker-lab/postgresql
+```
 
+Jalankan stack jika belum berjalan:
 
-# ---------------------------------------------------------
-# 1. PostgreSQL container running dan healthy
-# Checklist: docker compose ps
-# ---------------------------------------------------------
+```bash
 docker compose up -d
+```
+
+---
+
+## 1. PostgreSQL container running dan healthy — `docker compose ps`
+
+```bash
 docker compose ps
+```
 
+**Bukti berhasil:** service `db` / container `postgres-db` berstatus `running` dan `healthy`.
 
-# ---------------------------------------------------------
-# 2. Init script berhasil — tabel di schema app ada
-# Checklist: tabel app.* muncul
-# ---------------------------------------------------------
+Jika belum healthy:
+
+```bash
+docker compose logs db --tail 50
+```
+
+---
+
+## 2. Init script berhasil — tabel di schema `app` ada
+
+```bash
+docker exec postgres-db psql -U labuser -d labdb -c "\dn"
 docker exec postgres-db psql -U labuser -d labdb -c "\dt app.*"
+```
 
-# Bukti tambahan: data sample dari init script
-docker exec postgres-db psql -U labuser -d labdb -c "SELECT * FROM app.mahasiswa;"
+**Bukti berhasil:** schema `app` ada dan tabel berikut tampil:
 
+- `app.mahasiswa`
+- `app.matakuliah`
+- `app.nilai`
+- `app.activity_log`
 
-# ---------------------------------------------------------
-# 3. psql dari host bisa connect
-# Checklist: psql -h localhost -U labuser -d labdb
-# ---------------------------------------------------------
+---
 
-# Install psql client jika belum ada
+## 3. `psql` dari host bisa connect
+
+Jika `psql` belum ada di host:
+
+```bash
 sudo apt install -y postgresql-client
+```
 
-# Connect dari host
-psql -h localhost -U labuser -d labdb
+Tes koneksi dari host:
 
-# Setelah masuk psql, jalankan:
-# \dt app.*
-# SELECT * FROM app.mahasiswa;
-# \q
+```bash
+PGPASSWORD=labpass123 psql -h localhost -U labuser -d labdb -c "SELECT current_database(), current_user;"
+```
 
+**Bukti berhasil:** output menampilkan:
 
-# ---------------------------------------------------------
-# 4. pgAdmin4 bisa diakses dan connect ke database
-# Checklist: http://localhost:5050
-# ---------------------------------------------------------
+```text
+current_database | current_user
+labdb            | labuser
+```
 
-# Buka browser:
-# http://localhost:5050
-#
-# Login:
-# Email    : admin@pens.ac.id
-# Password : admin123
-#
-# Add New Server:
-# Name     : Lab PostgreSQL
-# Host     : db
-# Port     : 5432
-# Database : labdb
-# Username : labuser
-# Password : labpass123
-#
-# Setelah connect:
-# Servers → Lab PostgreSQL → Databases → labdb → Schemas → app → Tables
+---
 
+## 4. pgAdmin4 bisa diakses dan connect ke database
 
-# ---------------------------------------------------------
-# 5. Query CRUD berhasil — INSERT, SELECT, UPDATE, DELETE
-# ---------------------------------------------------------
+Buka browser:
 
-# CREATE / INSERT
-docker exec postgres-db psql -U labuser -d labdb -c "
+```text
+http://localhost:5050
+```
+
+Login pgAdmin:
+
+```text
+Email    : admin@pens.ac.id
+Password : admin123
+```
+
+Tambahkan server baru:
+
+```text
+Name     : Lab PostgreSQL
+Host     : db
+Port     : 5432
+Database : labdb
+Username : labuser
+Password : labpass123
+```
+
+**Bukti berhasil:** pgAdmin menampilkan database `labdb`, schema `app`, dan tabel `mahasiswa`, `matakuliah`, `nilai`, `activity_log`.
+
+---
+
+## 5. Query CRUD berhasil — INSERT, SELECT, UPDATE, DELETE
+
+Jalankan satu blok CRUD:
+
+```bash
+docker exec -i postgres-db psql -U labuser -d labdb << 'SQLEOF'
+-- CREATE / INSERT
 INSERT INTO app.mahasiswa (nrp, nama, kelas, kelompok, email)
-VALUES ('3122600010', 'Fajar Rizki', 'D', 5, 'fajar@student.pens.ac.id');
-"
+VALUES ('3122600099', 'Test Checklist', 'D', 9, 'test.checklist@student.pens.ac.id')
+ON CONFLICT (nrp) DO UPDATE
+SET nama = EXCLUDED.nama,
+    kelas = EXCLUDED.kelas,
+    kelompok = EXCLUDED.kelompok,
+    email = EXCLUDED.email;
 
-# READ / SELECT
-docker exec postgres-db psql -U labuser -d labdb -c "
-SELECT * FROM app.mahasiswa WHERE nrp = '3122600010';
-"
+-- READ / SELECT
+SELECT id, nrp, nama, kelas, kelompok, email
+FROM app.mahasiswa
+WHERE nrp = '3122600099';
 
-# UPDATE
-docker exec postgres-db psql -U labuser -d labdb -c "
+-- UPDATE
 UPDATE app.mahasiswa
-SET email = 'fajar.rizki@student.pens.ac.id'
-WHERE nrp = '3122600010';
-"
+SET nama = 'Test Checklist Updated'
+WHERE nrp = '3122600099';
 
-# CEK UPDATE
-docker exec postgres-db psql -U labuser -d labdb -c "
-SELECT nrp, nama, email FROM app.mahasiswa WHERE nrp = '3122600010';
-"
+SELECT id, nrp, nama, kelas, kelompok, email
+FROM app.mahasiswa
+WHERE nrp = '3122600099';
 
-# DELETE
-docker exec postgres-db psql -U labuser -d labdb -c "
-DELETE FROM app.mahasiswa WHERE nrp = '3122600010';
-"
+-- DELETE
+DELETE FROM app.mahasiswa
+WHERE nrp = '3122600099';
 
-# CEK DELETE
-docker exec postgres-db psql -U labuser -d labdb -c "
-SELECT * FROM app.mahasiswa WHERE nrp = '3122600010';
-"
+SELECT COUNT(*) AS sisa_data_test
+FROM app.mahasiswa
+WHERE nrp = '3122600099';
+SQLEOF
+```
 
+**Bukti berhasil:**
 
-# ---------------------------------------------------------
-# 6. Backup berhasil — file .dump dan .sql ada di ./backup/
-# ---------------------------------------------------------
+- INSERT/SELECT menampilkan data `3122600099`.
+- UPDATE mengubah nama menjadi `Test Checklist Updated`.
+- DELETE membuat `sisa_data_test = 0`.
 
-# Backup custom format
+---
+
+## 6. Backup berhasil — file `.dump` dan `.sql` ada di `./backup/`
+
+```bash
+mkdir -p backup
+
 docker exec postgres-db pg_dump -U labuser -d labdb -Fc \
   -f /backup/labdb_backup.dump
 
-# Backup SQL plain text
 docker exec postgres-db pg_dump -U labuser -d labdb \
   -f /backup/labdb_backup.sql
 
-# Cek file backup di host
-ls -la backup/
+ls -lh backup/
+```
 
+**Bukti berhasil:** folder `backup/` berisi:
 
-# ---------------------------------------------------------
-# 7. Restore berhasil — data bisa dibaca di labdb_restore
-# ---------------------------------------------------------
+- `labdb_backup.dump`
+- `labdb_backup.sql`
 
-# Hapus database restore jika sudah ada
-docker exec postgres-db psql -U labuser -d postgres -c "
-DROP DATABASE IF EXISTS labdb_restore WITH (FORCE);
-"
+Ukuran file tidak boleh `0 bytes`.
 
-# Buat database restore
-docker exec postgres-db psql -U labuser -d postgres -c "
-CREATE DATABASE labdb_restore;
-"
+---
 
-# Restore dari backup
+## 7. Restore berhasil — data bisa dibaca di database `labdb_restore`
+
+Buat ulang database restore:
+
+```bash
+docker exec postgres-db psql -U labuser -d postgres -c "DROP DATABASE IF EXISTS labdb_restore;"
+docker exec postgres-db psql -U labuser -d postgres -c "CREATE DATABASE labdb_restore;"
+```
+
+Restore:
+
+```bash
 docker exec postgres-db pg_restore -U labuser -d labdb_restore \
   /backup/labdb_backup.dump
+```
 
-# Verifikasi data hasil restore
-docker exec postgres-db psql -U labuser -d labdb_restore -c "
-SELECT * FROM app.mahasiswa;
-"
+Verifikasi:
 
+```bash
+docker exec postgres-db psql -U labuser -d labdb_restore -c "\dt app.*"
+docker exec postgres-db psql -U labuser -d labdb_restore -c "SELECT * FROM app.mahasiswa LIMIT 5;"
+```
 
-# ---------------------------------------------------------
-# 8. Data persist — setelah docker compose down + up, data masih ada
-# ---------------------------------------------------------
+**Bukti berhasil:** tabel `app.*` ada di `labdb_restore` dan data mahasiswa bisa dibaca.
 
-# Cek jumlah data sebelum down
-docker exec postgres-db psql -U labuser -d labdb -c "
-SELECT COUNT(*) FROM app.mahasiswa;
-"
+---
 
-# Down tanpa hapus volume
+## 8. Data persist — setelah `docker compose down` + `up`, data masih ada
+
+Tambahkan data persist-test:
+
+```bash
+docker exec postgres-db psql -U labuser -d labdb -c \
+"INSERT INTO app.mahasiswa (nrp, nama, kelas, kelompok, email)
+ VALUES ('3122600088', 'Persist Test', 'A', 8, 'persist@student.pens.ac.id')
+ ON CONFLICT (nrp) DO UPDATE SET nama = EXCLUDED.nama;"
+```
+
+Restart stack tanpa menghapus volume:
+
+```bash
 docker compose down
-
-# Up lagi
 docker compose up -d
+sleep 10
+docker compose ps
+```
 
-# Cek data lagi
-docker exec postgres-db psql -U labuser -d labdb -c "
-SELECT COUNT(*) FROM app.mahasiswa;
-"
+Cek data:
 
+```bash
+docker exec postgres-db psql -U labuser -d labdb -c \
+"SELECT nrp, nama FROM app.mahasiswa WHERE nrp = '3122600088';"
+```
 
-# ---------------------------------------------------------
-# 9. Monitoring query berfungsi — pg_stat_activity, pg_database_size
-# ---------------------------------------------------------
+**Bukti berhasil:** data `Persist Test` masih ada setelah `down` + `up`.
 
-# Cek ukuran database
-docker exec postgres-db psql -U labuser -d labdb -c "
+> Jangan gunakan `docker compose down -v` untuk bukti persistensi, karena flag `-v` memang menghapus volume.
+
+---
+
+## 9. Monitoring query berfungsi — `pg_stat_activity`, `pg_database_size`
+
+```bash
+docker exec -i postgres-db psql -U labuser -d labdb << 'SQLEOF'
 SELECT pg_database.datname,
        pg_size_pretty(pg_database_size(pg_database.datname)) AS size
 FROM pg_database
 ORDER BY pg_database_size(pg_database.datname) DESC;
-"
 
-# Cek koneksi aktif
-docker exec postgres-db psql -U labuser -d labdb -c "
 SELECT pid, usename, datname, client_addr, state, query_start, query
 FROM pg_stat_activity
 WHERE datname = 'labdb';
-"
 
+SELECT relname,
+       seq_scan, seq_tup_read,
+       idx_scan, idx_tup_fetch,
+       n_tup_ins, n_tup_upd, n_tup_del
+FROM pg_stat_user_tables
+WHERE schemaname = 'app';
+SQLEOF
+```
 
-# ---------------------------------------------------------
-# 10. Log PostgreSQL bisa dibaca di /var/log/postgresql/
-# ---------------------------------------------------------
+**Bukti berhasil:** query menghasilkan tabel statistik database, koneksi aktif, dan statistik tabel.
 
-# Lihat daftar file log
-docker exec postgres-db ls -la /var/log/postgresql/
+---
 
-# Lihat isi log terbaru
-docker exec postgres-db sh -c 'cat /var/log/postgresql/postgresql-$(date +%Y-%m-%d).log | tail -30'
+## 10. Log PostgreSQL bisa dibaca di `/var/log/postgresql/`
+
+```bash
+docker exec postgres-db ls -lah /var/log/postgresql/
+docker exec postgres-db sh -c "tail -30 /var/log/postgresql/postgresql-$(date +%Y-%m-%d).log"
+```
+
+**Bukti berhasil:** file log PostgreSQL ada dan bisa dibaca. Jika nama file tanggal berbeda, cek dulu dengan:
+
+```bash
+docker exec postgres-db find /var/log/postgresql -type f -maxdepth 1 -print
+```
+
+---
+
+## Ringkasan bukti yang bisa dimasukkan ke laporan
+
+```bash
+cd ~/docker-lab/postgresql
+docker compose ps
+docker exec postgres-db psql -U labuser -d labdb -c "\dt app.*"
+PGPASSWORD=labpass123 psql -h localhost -U labuser -d labdb -c "SELECT current_database(), current_user;"
+docker exec postgres-db psql -U labuser -d labdb -c "SELECT * FROM app.mahasiswa LIMIT 5;"
+ls -lh backup/
+docker exec postgres-db psql -U labuser -d labdb_restore -c "SELECT * FROM app.mahasiswa LIMIT 5;"
+docker exec postgres-db psql -U labuser -d labdb -c "SELECT pg_size_pretty(pg_database_size('labdb'));"
+docker exec postgres-db ls -lah /var/log/postgresql/
+```

@@ -1,31 +1,36 @@
-# =========================================================
-# CHECKLIST MODUL 3 — WEB SERVICE DOCKER: APACHE & NGINX
-# =========================================================
+# MODUL 3 — Jawaban Checklist Web Service Docker — Apache & Nginx
 
+> Tujuan file ini: menjalankan dan membuktikan setiap item checklist Modul 3.  
+> Project diasumsikan berada di `~/docker-lab/web-service`.
 
-# ---------------------------------------------------------
-# 0. Masuk folder project Modul 3
-# ---------------------------------------------------------
+---
 
+## 0. Masuk folder project dan siapkan host lokal
+
+```bash
 cd ~/docker-lab/web-service
+```
 
+Tambahkan domain lab ke `/etc/hosts` jika belum ada:
 
-# ---------------------------------------------------------
-# 0.1 Tambahkan DNS lokal
-# Wajib agar site1.lab, site2.lab, dan app.lab bisa dikenali
-# ---------------------------------------------------------
+```bash
+grep -q "site1.lab" /etc/hosts || \
+  echo "127.0.0.1 site1.lab site2.lab app.lab" | sudo tee -a /etc/hosts
+```
 
-echo "127.0.0.1 site1.lab site2.lab app.lab" | sudo tee -a /etc/hosts
+**Bukti berhasil:**
 
-# Cek hasilnya
-cat /etc/hosts | grep lab
+```bash
+getent hosts site1.lab site2.lab app.lab
+```
 
+---
 
-# ---------------------------------------------------------
-# 1. Self-signed SSL certificate di-generate
-# Checklist: file .crt dan .key ada di ./certs/
-# ---------------------------------------------------------
+## 1. Self-signed SSL certificate di-generate — `.crt` dan `.key` ada di `./certs/`
 
+Generate certificate jika belum ada:
+
+```bash
 mkdir -p certs
 
 openssl req -x509 -nodes -days 365 \
@@ -34,174 +39,192 @@ openssl req -x509 -nodes -days 365 \
   -out certs/server.crt \
   -subj "/C=ID/ST=Jawa Timur/L=Surabaya/O=PENS Lab/CN=*.lab" \
   -addext "subjectAltName=DNS:*.lab,DNS:site1.lab,DNS:site2.lab,DNS:app.lab"
+```
 
-# Cek file certificate
+Verifikasi:
+
+```bash
 ls -la certs/
-
-# Cek detail certificate
 openssl x509 -in certs/server.crt -noout -subject -issuer -dates
+```
 
+**Bukti berhasil:** folder `certs/` berisi:
 
-# ---------------------------------------------------------
-# 2. docker compose up --build -d — 4 service running
-# ---------------------------------------------------------
+- `server.crt`
+- `server.key`
 
+---
+
+## 2. `docker compose up --build -d` — 4 service running
+
+```bash
 docker compose up --build -d
-
-# Cek 4 service
 docker compose ps
+```
 
-# Expected service:
-# nginx-proxy
-# apache-web
-# flask-app
-# postgres-db
-#
-# Status minimal:
-# Up
-#
-# Untuk database:
-# healthy
+**Bukti berhasil:** 4 service berjalan, biasanya:
 
+- `nginx-proxy`
+- `apache-web`
+- `flask-app`
+- `postgres-db`
 
-# ---------------------------------------------------------
-# 3. curl -k https://site1.lab:8443
-# Checklist: menampilkan Site 1 Company
-# ---------------------------------------------------------
+Status harus `running` atau `Up`.
 
+---
+
+## 3. `curl -k https://site1.lab:8443` menampilkan Site 1 Company
+
+```bash
 curl -k https://site1.lab:8443
+```
 
-# Cek lebih singkat
-curl -k https://site1.lab:8443 | grep -i "Site 1"
+**Bukti berhasil:** output HTML memuat teks:
 
-# Expected:
-# Site 1 — Company Profile
+```text
+Site 1
+Company Profile
+site1.lab
+```
 
+---
 
-# ---------------------------------------------------------
-# 4. curl -k https://site2.lab:8443
-# Checklist: menampilkan Site 2 Blog
-# ---------------------------------------------------------
+## 4. `curl -k https://site2.lab:8443` menampilkan Site 2 Blog
 
+```bash
 curl -k https://site2.lab:8443
+```
 
-# Cek lebih singkat
-curl -k https://site2.lab:8443 | grep -i "Site 2"
+**Bukti berhasil:** output HTML memuat teks:
 
-# Expected:
-# Site 2 — Blog
+```text
+Site 2
+Blog
+site2.lab
+```
 
+---
 
-# ---------------------------------------------------------
-# 5. curl -k https://app.lab:8443/api/health
-# Checklist: database connected
-# ---------------------------------------------------------
+## 5. `curl -k https://app.lab:8443/api/health` — database connected
 
-curl -k https://app.lab:8443/api/health
-
-# Versi rapi
+```bash
 curl -k https://app.lab:8443/api/health | python3 -m json.tool
+```
 
-# Expected:
-# "status": "ok"
-# "db_status": "connected"
+**Bukti berhasil:** response JSON memuat:
 
+```json
+"db_status": "connected"
+```
 
-# ---------------------------------------------------------
-# 6. HTTP→HTTPS redirect berfungsi
-# Checklist: curl -I http://site1.lab:8080 return 301
-# ---------------------------------------------------------
+atau informasi PostgreSQL berhasil dibaca.
 
+---
+
+## 6. HTTP → HTTPS redirect berfungsi — return 301
+
+```bash
 curl -I http://site1.lab:8080
+```
 
-# Cek hanya header awal
-curl -I http://site1.lab:8080 | head
+**Bukti berhasil:** response header memuat:
 
-# Expected:
-# HTTP/1.1 301 Moved Permanently
-# Location: https://site1.lab...
+```text
+HTTP/1.1 301 Moved Permanently
+Location: https://site1.lab/
+```
 
+Jika domain lokal belum resolve, gunakan variasi ini:
 
-# ---------------------------------------------------------
-# 7. API CRUD berfungsi — POST dan GET /api/visitors berhasil
-# ---------------------------------------------------------
+```bash
+curl -I -H "Host: site1.lab" http://localhost:8080
+```
 
-# POST visitor
+---
+
+## 7. API CRUD berfungsi — POST dan GET `/api/visitors` berhasil
+
+Tambah visitor:
+
+```bash
 curl -k -X POST https://app.lab:8443/api/visitors \
   -H "Content-Type: application/json" \
-  -d '{"name": "Daffi PENS"}'
+  -d '{"name": "Mahasiswa PENS"}' | python3 -m json.tool
+```
 
-# Cek POST dengan status HTTP
-curl -k -i -X POST https://app.lab:8443/api/visitors \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Daffi PENS"}'
+Lihat daftar visitor:
 
-# Expected:
-# HTTP/1.1 201 CREATED
-
-# GET visitors
-curl -k https://app.lab:8443/api/visitors
-
-# Versi rapi
+```bash
 curl -k https://app.lab:8443/api/visitors | python3 -m json.tool
+```
 
-# Expected:
-# Data visitor yang tadi di-POST muncul
+**Bukti berhasil:**
 
+- POST mengembalikan data visitor baru atau status sukses.
+- GET menampilkan daftar visitor termasuk `Mahasiswa PENS`.
 
-# ---------------------------------------------------------
-# 8. Log per-site terpisah
-# Checklist: file log berbeda untuk site1, site2, app
-# ---------------------------------------------------------
+---
 
-# Generate traffic dulu agar log terisi
+## 8. Log per-site terpisah — file log berbeda untuk site1, site2, app
+
+Generate traffic dulu:
+
+```bash
 curl -k https://site1.lab:8443 > /dev/null
 curl -k https://site2.lab:8443 > /dev/null
 curl -k https://app.lab:8443/api/health > /dev/null
+```
 
-# Cek daftar log Nginx
-docker exec nginx-proxy ls -la /var/log/nginx
+Cek log Nginx:
 
-# Expected file Nginx:
-# site1-access.log
-# site1-error.log
-# site2-access.log
-# site2-error.log
-# app-access.log
-# app-error.log
+```bash
+docker exec nginx-proxy sh -c "ls -l /var/log/nginx/*access.log"
+docker exec nginx-proxy sh -c "tail -5 /var/log/nginx/site1-access.log"
+docker exec nginx-proxy sh -c "tail -5 /var/log/nginx/site2-access.log"
+docker exec nginx-proxy sh -c "tail -5 /var/log/nginx/app-access.log"
+```
 
-# Cek isi log Nginx site1
-docker exec nginx-proxy cat /var/log/nginx/site1-access.log
+Cek log Apache:
 
-# Cek isi log Nginx site2
-docker exec nginx-proxy cat /var/log/nginx/site2-access.log
+```bash
+docker exec apache-web sh -c "ls -l /var/log/apache2/*access.log"
+docker exec apache-web sh -c "tail -5 /var/log/apache2/site1-access.log"
+docker exec apache-web sh -c "tail -5 /var/log/apache2/site2-access.log"
+```
 
-# Cek isi log Nginx app
-docker exec nginx-proxy cat /var/log/nginx/app-access.log
+**Bukti berhasil:** ada file log berbeda untuk site1, site2, dan app; setiap file berisi request sesuai host.
 
-# Cek daftar log Apache
-docker exec apache-web ls -la /var/log/apache2
+---
 
-# Cek isi log Apache site1
-docker exec apache-web cat /var/log/apache2/site1-access.log
+## 9. `X-Real-IP` terlihat di response Flask
 
-# Cek isi log Apache site2
-docker exec apache-web cat /var/log/apache2/site2-access.log
+```bash
+curl -k https://app.lab:8443/ | python3 -m json.tool
+```
 
+**Bukti berhasil:** response JSON dari Flask memuat field seperti:
 
-# ---------------------------------------------------------
-# 9. X-Real-IP terlihat di response Flask
-# Checklist: field client_ip muncul di response Flask
-# ---------------------------------------------------------
+```json
+"client_ip": "..."
+```
 
-curl -k https://app.lab:8443
+atau field lain yang menunjukkan IP request yang diteruskan oleh Nginx melalui header `X-Real-IP`.
 
-# Versi rapi
-curl -k https://app.lab:8443 | python3 -m json.tool
+---
 
-# Expected response mengandung:
-# "client_ip": "..."
-# "proto": "https"
-#
-# Ini membuktikan Nginx meneruskan header X-Real-IP
-# dan X-Forwarded-Proto ke Flask.
+## Ringkasan bukti yang bisa dimasukkan ke laporan
+
+```bash
+cd ~/docker-lab/web-service
+ls -la certs/
+docker compose ps
+curl -k https://site1.lab:8443
+curl -k https://site2.lab:8443
+curl -k https://app.lab:8443/api/health | python3 -m json.tool
+curl -I http://site1.lab:8080
+curl -k -X POST https://app.lab:8443/api/visitors -H "Content-Type: application/json" -d '{"name": "Mahasiswa PENS"}'
+curl -k https://app.lab:8443/api/visitors | python3 -m json.tool
+docker exec nginx-proxy sh -c "ls -l /var/log/nginx/*access.log"
+docker exec apache-web sh -c "ls -l /var/log/apache2/*access.log"
+curl -k https://app.lab:8443/ | python3 -m json.tool
+```
